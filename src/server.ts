@@ -5,6 +5,8 @@ import { config } from "dotenv";
 import { writeToErrLog, writeToLog } from "./utils/logging";
 import { registerDeleteTempOnExit } from "./utils/exitHandler";
 import { setEnvOverrides, clearEnvOverrides } from "./utils/envConfig";
+import { McpServerWithMiddleware } from "./utils/middleware";
+import { registerAllHandlers } from "./handlers";
 import "./utils/exitHandler";
 
 config({ path: path.join(projPath, ".env") });
@@ -13,6 +15,17 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 app.use(express.json());
+
+const mcpServer = new McpServerWithMiddleware({
+	name: "integration-suite",
+	version: "1.0.0",
+	capabilities: {
+		resources: {},
+		tools: {},
+	},
+});
+
+registerAllHandlers(mcpServer);
 
 export const logError = (msg: any): void => {
 	writeToErrLog(msg);
@@ -68,14 +81,22 @@ app.post("/mcp", async (req: Request, res: Response) => {
 
 		logInfo(`Received MCP request: ${JSON.stringify(mcpRequest)}`);
 
-		res.json({
-			jsonrpc: "2.0",
-			id: mcpRequest.id,
-			result: {
-				status: "ok",
-				message: "MCP Server is running. Please use stdio mode for full MCP functionality."
-			}
-		});
+		if (!mcpRequest.jsonrpc || !mcpRequest.method) {
+			return res.status(400).json({
+				jsonrpc: "2.0",
+				id: mcpRequest.id,
+				error: {
+					code: -32600,
+					message: "Invalid Request"
+				}
+			});
+		}
+
+		const result = await mcpServer.handleRequest(mcpRequest);
+
+		logInfo(`MCP response: ${JSON.stringify(result)}`);
+
+		res.json(result);
 	} catch (error) {
 		logError(error);
 		res.status(500).json({

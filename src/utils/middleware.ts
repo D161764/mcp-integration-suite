@@ -79,6 +79,115 @@ export class McpServerWithMiddleware {
 		this.middlewareManager.use(middleware);
 	}
 
+	async handleRequest(request: any): Promise<any> {
+		try {
+			const { method, params, id } = request;
+
+			if (method === "initialize") {
+				return {
+					jsonrpc: "2.0",
+					id,
+					result: {
+						protocolVersion: "2024-11-05",
+						capabilities: {
+							resources: {},
+							tools: {}
+						},
+						serverInfo: {
+							name: "integration-suite",
+							version: "1.0.0"
+						}
+					}
+				};
+			}
+
+			if (method === "tools/list") {
+				const toolsList: any[] = [];
+				(this.server.server as any)._requestHandlers?.forEach((handler: any, key: string) => {
+					if (key.startsWith("tools/call:")) {
+						const toolName = key.replace("tools/call:", "");
+						const tool = (this as any)._registeredTools?.get?.(toolName);
+						if (tool) {
+							toolsList.push({
+								name: toolName,
+								description: tool.description || "",
+								inputSchema: tool.inputSchema || { type: "object", properties: {} }
+							});
+						}
+					}
+				});
+
+				return {
+					jsonrpc: "2.0",
+					id,
+					result: { tools: toolsList }
+				};
+			}
+
+			if (method === "tools/call") {
+				const toolName = params.name;
+				const toolArgs = params.arguments || {};
+
+				const toolHandler = (this.server.server as any)._requestHandlers?.get?.(`tools/call:${toolName}`);
+				if (!toolHandler) {
+					return {
+						jsonrpc: "2.0",
+						id,
+						error: {
+							code: -32601,
+							message: `Tool not found: ${toolName}`
+						}
+					};
+				}
+
+				const result = await toolHandler({ name: toolName, arguments: toolArgs }, {});
+
+				return {
+					jsonrpc: "2.0",
+					id,
+					result
+				};
+			}
+
+			if (method === "resources/list") {
+				const resourcesList: any[] = [];
+				(this as any)._registeredResources?.forEach?.((resource: any) => {
+					resourcesList.push({
+						uri: resource.uri,
+						name: resource.name,
+						description: resource.description,
+						mimeType: resource.mimeType
+					});
+				});
+
+				return {
+					jsonrpc: "2.0",
+					id,
+					result: { resources: resourcesList }
+				};
+			}
+
+			return {
+				jsonrpc: "2.0",
+				id,
+				error: {
+					code: -32601,
+					message: `Method not found: ${method}`
+				}
+			};
+		} catch (error) {
+			return {
+				jsonrpc: "2.0",
+				id: request.id,
+				error: {
+					code: -32603,
+					message: "Internal error",
+					data: error instanceof Error ? error.message : String(error)
+				}
+			};
+		}
+	}
+
 	/**
 	 * wrapper function for server.tool() to have middleware functionalities
 	 */
