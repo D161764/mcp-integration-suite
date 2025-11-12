@@ -3,6 +3,22 @@ DISCLAIMER: This server is still experimental. Use at your own risk!
 
 A ModelContextProtocol (MCP) Server for SAP Integration Suite.
 
+## 📚 Interactive API Documentation
+
+This server includes comprehensive **Swagger/OpenAPI documentation** that is automatically available when you run or deploy the server:
+
+- **Local**: http://localhost:8080/
+- **Deployed**: `https://your-app.cfapps.eu10.hana.ondemand.com/`
+
+The documentation includes:
+- Complete list of all available tools
+- Interactive API testing
+- Claude Desktop configuration examples
+- Authentication setup instructions
+- Request/response schemas
+
+See [SWAGGER_DOCS.md](./SWAGGER_DOCS.md) for more details.
+
 ## Requirements
 NodeJs and NPM (Node Version > 20 because of native NodeJS fetch)
 

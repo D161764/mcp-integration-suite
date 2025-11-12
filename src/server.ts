@@ -7,6 +7,8 @@ import { registerDeleteTempOnExit } from "./utils/exitHandler";
 import { setEnvOverrides, clearEnvOverrides } from "./utils/envConfig";
 import { McpServerWithMiddleware } from "./utils/middleware";
 import { registerAllHandlers } from "./handlers";
+import { generateSwaggerSpec } from "./utils/swagger";
+import swaggerUi from "swagger-ui-express";
 import "./utils/exitHandler";
 
 config({ path: path.join(projPath, ".env") });
@@ -34,6 +36,17 @@ export const logError = (msg: any): void => {
 export const logInfo = (msg: any): void => {
 	writeToLog(msg);
 };
+
+const swaggerSpec = generateSwaggerSpec(mcpServer);
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+	customCss: '.swagger-ui .topbar { display: none }',
+	customSiteTitle: 'SAP Integration Suite MCP Server',
+}));
+
+app.get("/", (_req: Request, res: Response) => {
+	res.redirect('/api-docs');
+});
 
 app.get("/health", (_req: Request, res: Response) => {
 	res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
@@ -119,7 +132,9 @@ async function main() {
 	app.listen(PORT, () => {
 		logInfo(`HTTP Server running on port ${PORT}`);
 		console.log(`HTTP Server running on port ${PORT}`);
+		console.log(`Documentation: http://localhost:${PORT}/api-docs`);
 		console.log(`Health check: http://localhost:${PORT}/health`);
+		console.log(`MCP Endpoint: http://localhost:${PORT}/mcp`);
 		console.log(`\nNote: This server provides HTTP endpoints for Cloud Foundry deployment.`);
 		console.log(`For full MCP functionality, use: npm run start:stdio`);
 	});
