@@ -1,0 +1,16 @@
+node_modules/
+src/
+*.test.ts
+*.test.js
+.git/
+.gitignore
+.env
+.env.example
+.vscode/
+jest.config.js
+tsconfig.json
+*.md
+coverage/
+.DS_Store
+npm-debug.log
+yarn-error.log

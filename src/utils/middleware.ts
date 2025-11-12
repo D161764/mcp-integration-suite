@@ -59,15 +59,20 @@ export class MiddlewareManager {
 }
 
 /**
- * Custom Middleware Server which extends McpServer by a middleware functionality
+ * Custom Middleware Server which wraps McpServer with middleware functionality
  * This is useful for logging atm
  */
-export class McpServerWithMiddleware extends McpServer {
+export class McpServerWithMiddleware {
+	public server: McpServer;
 	private middlewareManager: MiddlewareManager;
 
 	constructor(options: ConstructorParameters<typeof McpServer>[0]) {
-		super(options);
+		this.server = new McpServer(options);
 		this.middlewareManager = new MiddlewareManager();
+	}
+
+	async connect(transport: any) {
+		return this.server.connect(transport);
 	}
 
 	use(middleware: MiddlewareFunction) {
@@ -99,6 +104,13 @@ export class McpServerWithMiddleware extends McpServer {
 			return handler(args, extra);
 		};
 
-		return this.tool(name, description, params, wrappedHandler);
+		return this.server.tool(
+			name,
+			{
+				description,
+				inputSchema: params as any
+			} as any,
+			wrappedHandler as any
+		);
 	}
 }

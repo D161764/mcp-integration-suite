@@ -2,6 +2,7 @@ import { z } from "zod";
 import { logInfo } from "../..";
 import { sendRequestSchema } from "../../handlers/messages/types";
 import { getOAuthTokenCPI } from "../cpi_auth";
+import { getEnvValue } from "../../utils/envConfig";
 
 export const sendRequestToCPI = async (
     path: z.infer<typeof sendRequestSchema.path>,
@@ -25,9 +26,10 @@ export const sendRequestToCPI = async (
         reqHeaders[header.key] = header.value;
     });
 
-    const fullURL = `${process.env["CPI_BASE_URL"]}${path}`;
+    const cpiBaseUrl = getEnvValue("CPI_BASE_URL");
+    const fullURL = `${cpiBaseUrl}${path}`;
     logInfo(`Executing request against ${fullURL}`);
-    const iflowResponse = await fetch(`${process.env["CPI_BASE_URL"]}${path}`, {
+    const iflowResponse = await fetch(fullURL, {
         headers: reqHeaders,
         body,
         method,

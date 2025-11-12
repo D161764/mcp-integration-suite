@@ -5,6 +5,7 @@ import {
 	AuthenticationType,
 } from "@sap-cloud-sdk/connectivity";
 import { logError, logInfo } from "..";
+import { getEnvValue } from "../utils/envConfig";
 
 // Token cache
 let tokenCache: {
@@ -19,18 +20,19 @@ export const getOAuthToken = async (): Promise<DestinationAuthToken> => {
 		return tokenCache.token;
 	}
 	// Add check for token URL existence
-	if (!process.env.API_OAUTH_TOKEN_URL) {
+	const tokenUrl = getEnvValue("API_OAUTH_TOKEN_URL");
+	if (!tokenUrl) {
 		throw new Error("API_OAUTH_TOKEN_URL environment variable is not set.");
 	}
 	const params = new URLSearchParams();
 	params.append("grant_type", "client_credentials");
-	params.append("client_id", process.env.API_OAUTH_CLIENT_ID as string);
+	params.append("client_id", getEnvValue("API_OAUTH_CLIENT_ID") as string);
 	params.append(
 		"client_secret",
-		process.env.API_OAUTH_CLIENT_SECRET as string
+		getEnvValue("API_OAUTH_CLIENT_SECRET") as string
 	);
 
-	const response = await fetch(process.env.API_OAUTH_TOKEN_URL as string, {
+	const response = await fetch(tokenUrl, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/x-www-form-urlencoded",
@@ -75,13 +77,13 @@ export const getOAuthToken = async (): Promise<DestinationAuthToken> => {
 };
 
 const isOAuthPresent = () =>
-	process.env.API_OAUTH_CLIENT_ID &&
-	process.env.API_OAUTH_CLIENT_SECRET &&
-	process.env.API_OAUTH_TOKEN_URL
+	getEnvValue("API_OAUTH_CLIENT_ID") &&
+	getEnvValue("API_OAUTH_CLIENT_SECRET") &&
+	getEnvValue("API_OAUTH_TOKEN_URL")
 	? true
 	: false;
 
-const isBasicCredPresent = () => process.env.API_USER && process.env.API_PASS ? true : false;
+const isBasicCredPresent = () => getEnvValue("API_USER") && getEnvValue("API_PASS") ? true : false;
 
 /**
  * Get the API Destination based on .env file
@@ -89,7 +91,7 @@ const isBasicCredPresent = () => process.env.API_USER && process.env.API_PASS ? 
  */
 export const getCurrentDestionation =
 	async (): Promise<HttpDestinationOrFetchOptions> => {
-		if (!process.env.API_BASE_URL) {
+		if (!getEnvValue("API_BASE_URL")) {
 			throw new Error("No API Url provided in project .env file");
 		}
 
@@ -112,7 +114,7 @@ const getOAuthConfig = async (): Promise<HttpDestinationOrFetchOptions> => {
 	return {
 		authentication: "OAuth2ClientCredentials" as AuthenticationType,
 		isTrustingAllCertificates: false,
-		url: process.env.API_BASE_URL as string,
+		url: getEnvValue("API_BASE_URL") as string,
 		authTokens: [await getOAuthToken()],
 	};
 };
@@ -120,9 +122,9 @@ const getOAuthConfig = async (): Promise<HttpDestinationOrFetchOptions> => {
 const getBasicAuthConfig = async(): Promise<HttpDestinationOrFetchOptions> => {
 	return {
 		authentication: "BasicAuthentication" as AuthenticationType,
-		username: process.env.API_USER,
-		password: process.env.API_PASS,
+		username: getEnvValue("API_USER"),
+		password: getEnvValue("API_PASS"),
 		isTrustingAllCertificates: false,
-		url: process.env.API_BASE_URL as string,
+		url: getEnvValue("API_BASE_URL") as string,
 	}
 }
