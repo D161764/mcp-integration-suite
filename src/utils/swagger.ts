@@ -1,4 +1,3 @@
-import swaggerJsdoc from 'swagger-jsdoc';
 import { McpServerWithMiddleware } from './middleware';
 
 export const generateSwaggerSpec = (mcpServer: McpServerWithMiddleware) => {
